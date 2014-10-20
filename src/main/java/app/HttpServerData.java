@@ -6,17 +6,18 @@ import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class HttpServerData {
 	private static AtomicInteger connections = new AtomicInteger(0);
-	private static Map<String, IpStat> statByIp = new ConcurrentHashMap<String, IpStat>();
-	private static Map<String, Integer> statByUrl = new ConcurrentHashMap<String, Integer>();
-	private static Vector<LogItem> log = new Vector<LogItem>();
+	private static Map<String, IpStat> statByIp = new HashMap<String, IpStat>();
+	private static Map<String, Integer> statByUrl = new HashMap<String, Integer>();
+	private static List<LogItem> log = new ArrayList<LogItem>(10000);
 	private int logId;
 	private long nano;
 	
@@ -77,11 +78,13 @@ public class HttpServerData {
 		int recBytes = cutstr(request.toString(),
 				System.getProperty("line.separator"), false).length();
 
-		int count = 0;
-		if (statByIp.containsKey(remIP)) {
-			count = statByIp.get(remIP).getCount();
+		synchronized (statByIp) {
+			int count = 0;
+			if (statByIp.containsKey(remIP)) {
+				count = statByIp.get(remIP).getCount();
+			}
+			statByIp.put(remIP, new IpStat(count + 1, reqTime));			
 		}
-		statByIp.put(remIP, new IpStat(count + 1, reqTime));
 
 		synchronized (log) {
 			logId = log.size();
@@ -105,12 +108,14 @@ public class HttpServerData {
 			break;
 		}
 
-		if (redir.length() > 0) {
-			int cnt = 0;
-			if (statByUrl.containsKey(redir)) {
-				cnt = statByUrl.get(redir);
+		synchronized (statByUrl) {
+			if (redir.length() > 0) {
+				int cnt = 0;
+				if (statByUrl.containsKey(redir)) {
+					cnt = statByUrl.get(redir);
+				}
+				statByUrl.put(redir, cnt + 1);
 			}
-			statByUrl.put(redir, cnt + 1);
 		}
 
 		return redir;

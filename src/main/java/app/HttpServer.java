@@ -1,5 +1,8 @@
 package app;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -12,6 +15,7 @@ public final class HttpServer {
     static final int PORT = 80;
 
     public static void main(String[] args) throws Exception {
+    	Logger.getLogger("io.netty").setLevel(Level.OFF);
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         try {
